@@ -1,19 +1,26 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 [Route("[controller]")]
 [ApiController]
 public class TodoController:ControllerBase{
+        public ApplicationDbContext Context { get; }
+    public TodoController(ApplicationDbContext context)
+    {
+            this.Context = context;
+        
+    }
     [HttpGet]
     public async Task<ActionResult<List<Todo>>> Get(){
-        var todos = Database.Todos;
+        var todos = await Context.Todos.ToListAsync();
         return Ok(todos);
-    } 
+    }
 
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Todo>> Get(int id){
-        var todo = Database.Todos.FirstOrDefault(p=>p.Id==id);
+        var todo = await Context.Todos.Include(t=>t.Person).FirstOrDefaultAsync(t=>t.Id==id);
         if(todo==null){
             return NotFound();
         }
@@ -23,9 +30,8 @@ public class TodoController:ControllerBase{
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<ActionResult<Todo>> Post(Todo todo){
-        var lastId = Database.Todos.Max(todo=>todo.Id);
-        todo.Id = lastId+1;
-        Database.Todos.Add(todo);
+        Context.Todos.Add(todo);
+        await Context.SaveChangesAsync();
         return CreatedAtAction(nameof(Get),new {todo.Id},todo);
     }
 
@@ -37,7 +43,7 @@ public class TodoController:ControllerBase{
         if(todo.Id!=id){
             return BadRequest();
         }
-         var existingTodo = Database.Todos.FirstOrDefault(p=>p.Id==id);
+         var existingTodo = await Context.Todos.FirstOrDefaultAsync(t=>t.Id==id);
         
          if(existingTodo==null){
             return NotFound();
@@ -45,8 +51,7 @@ public class TodoController:ControllerBase{
          existingTodo.Title = todo.Title;
          existingTodo.Completed = todo.Completed;
 
-         Database.Todos.Remove(existingTodo);
-         Database.Todos.Add(existingTodo);
+         await Context.SaveChangesAsync();
          return NoContent();
     }
 
@@ -54,23 +59,24 @@ public class TodoController:ControllerBase{
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id){
-        var todo = Database.Todos.FirstOrDefault(p=>p.Id==id);
+        var todo = await Context.Todos.FirstOrDefaultAsync(t=>t.Id==id);
         if(todo==null){
             return NotFound();
         }
-        Database.Todos.Remove(todo);
+        Context.Todos.Remove(todo);
+        await Context.SaveChangesAsync();
         return NoContent();
     }
 
     [HttpGet("completed")]
     public async Task<ActionResult<List<Todo>>> GetCompleted(){
-        var completed = Database.Todos.Where(todo=>todo.Completed);
+        var completed = await Context.Todos.Where(todo=>todo.Completed).ToListAsync();
         return Ok(completed);
     }
 
     [HttpGet("incompleted")]
     public async Task<ActionResult<List<Todo>>> GetIncompelted(){
-        var incompleted = Database.Todos.Where(todo=>!todo.Completed);
+        var incompleted = await Context.Todos.Where(todo=>!todo.Completed).ToListAsync();
         return Ok(incompleted);
     }
 

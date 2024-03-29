@@ -4,5 +4,5 @@ public class Person{
 
 
    
-    public List<Todo> Todos { get; set; }
+    public List<Todo> Todos { get; set; } = [];
 }
