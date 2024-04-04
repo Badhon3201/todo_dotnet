@@ -1,8 +1,11 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 [Route("[controller]")]
 [ApiController]
+// [Authorize]
 public class PersonController:ControllerBase{
         private readonly ApplicationDbContext context;
     public PersonController(ApplicationDbContext context)
@@ -67,12 +70,24 @@ public class PersonController:ControllerBase{
         return NoContent();
     }
 
-    [HttpPost("join{id}")]
+    [HttpPost("join/{id}")]
     
     public async Task<IActionResult> Post(int id){
         var person = await context.Persons.FirstOrDefaultAsync(p=>p.Id==id);
         person.JoinCount = person.JoinCount+1;
         await context.SaveChangesAsync();
         return NoContent();
+    }
+
+
+    [HttpGet("my-profile")]
+    [Authorize]
+    public async Task<ActionResult<Person>> MyProfile(){
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+         var person = await context.Persons.FirstOrDefaultAsync(p=>p.Id==userId);
+         if(person==null){
+            return NotFound();
+         }
+         return Ok(person);
     }
 }
