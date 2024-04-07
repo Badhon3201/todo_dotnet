@@ -20,6 +20,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options=>{
     options.UseSqlite(builder.Configuration.GetConnectionString("Sqlite"));
 });
 
+builder.Services.AddScoped<ExceptionHandlerMiddleware>();
+
 builder.Services.AddIdentity<ApplicationUser,ApplicationRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
@@ -49,6 +51,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseMiddleware<ExceptionHandlerMiddleware>();
 
 app.UseHttpsRedirection();
 

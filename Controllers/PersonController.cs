@@ -26,7 +26,7 @@ public class PersonController:ControllerBase{
     public async Task<ActionResult<Person>> Get(int id){
         var person = await context.Persons.FirstOrDefaultAsync(p=>p.Id==id);
         if(person==null){
-            return NotFound();
+            throw new EntityNotFoundException(id);
         }
         return Ok(person);
     }
@@ -46,7 +46,8 @@ public class PersonController:ControllerBase{
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Put(int id,Person person){
         if(person.Id!=id){
-            return BadRequest();
+            throw new InvalidOperationException("Ids do not match");
+            // return BadRequest();
         }
          var esistingPerson = await context.Persons.FirstOrDefaultAsync(p=>p.Id==id);
         if(esistingPerson==null){
@@ -72,7 +73,7 @@ public class PersonController:ControllerBase{
 
     [HttpPost("join/{id}")]
     
-    public async Task<IActionResult> Post(int id){
+    public async Task<IActionResult> JoinCount(int id){
         var person = await context.Persons.FirstOrDefaultAsync(p=>p.Id==id);
         person.JoinCount = person.JoinCount+1;
         await context.SaveChangesAsync();
@@ -83,7 +84,8 @@ public class PersonController:ControllerBase{
     [HttpGet("my-profile")]
     [Authorize]
     public async Task<ActionResult<Person>> MyProfile(){
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+        // var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+         var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
          var person = await context.Persons.FirstOrDefaultAsync(p=>p.Id==userId);
          if(person==null){
             return NotFound();
